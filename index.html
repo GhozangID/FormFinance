@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FormFinance</title>
     
-    <!-- PWA Meta Tags (iOS Support) -->
+    <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" type="image/png" href="https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg">
     
-    <!-- 
-      MANIFEST PWA (DIPERBARUI UNTUK ANDROID)
-      - Menambahkan 2 ukuran icon (192 & 512)
-      - Menambahkan type 'maskable'
-      - Start URL diset eksplisit
-    -->
-    <link rel="manifest" id="manifest-placeholder" href='data:application/manifest+json,{"name":"FormFinance","short_name":"FormFinance","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","orientation":"portrait","icons":[{"src":"https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+    <!-- Link ke Manifest Fisik -->
+    <link rel="manifest" href="manifest.json">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -70,22 +65,23 @@
         .logo-container { text-align: center; margin-bottom: 20px; position: relative; }
         .logo-container img { width: 100%; display: block; max-height: 120px; object-fit: contain; margin: 0 auto; opacity: 0; transition: opacity 0.3s; }
         
-        /* INSTALL BUTTON (NEW) */
+        /* INSTALL BUTTON */
         #installBtn {
-            display: none; /* Hidden by default */
-            margin: 10px auto 5px auto;
+            display: none;
+            margin: 10px auto 15px auto;
             background: #333;
             color: #fff;
             border: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: fit-content;
         }
-        #installBtn i { margin-right: 6px; }
+        #installBtn i { margin-right: 8px; }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         #draftNotice { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -304,7 +300,7 @@
     };
 
     const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    let deferredPrompt; // Untuk menyimpan event install
+    let deferredPrompt; 
 
     window.onload = () => {
         // --- SPLASH ANIMATION ---
@@ -358,51 +354,29 @@
         updateDateDisplay();
         updateDateButtons();
         
-        // --- SERVICE WORKER REGISTRATION (SINGLE FILE HACK) ---
+        // --- REGISTER SERVICE WORKER (FISIK) ---
         if ('serviceWorker' in navigator) {
-            // Kita buat SW minimalis agar Android senang
-            const swContent = `
-                self.addEventListener('install', (e) => {
-                    self.skipWaiting();
-                });
-                self.addEventListener('activate', (e) => {
-                    e.waitUntil(self.clients.claim());
-                });
-                self.addEventListener('fetch', (e) => {
-                    // Passthrough, tidak ada cache karena ini single file dinamis
-                });
-            `;
-            const blob = new Blob([swContent], {type: 'text/javascript'});
-            const swUrl = URL.createObjectURL(blob);
-            
-            navigator.serviceWorker.register(swUrl)
-                .then((reg) => console.log('SW Registered via Blob', reg))
-                .catch((err) => console.log('SW Registration Failed', err));
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW Registered', reg))
+                .catch(err => console.log('SW Failed', err));
         }
 
         // --- INSTALL PROMPT LISTENER ---
         window.addEventListener('beforeinstallprompt', (e) => {
-            // Cegah Chrome 67 ke bawah muncul otomatis (agar kita bisa kontrol)
             e.preventDefault();
-            // Simpan event supaya bisa dipanggil nanti
             deferredPrompt = e;
-            // Munculkan tombol install kita
-            document.getElementById('installBtn').style.display = 'block';
+            const btn = document.getElementById('installBtn');
+            btn.style.display = 'block';
         });
     };
 
-    // Fungsi Install Manual
     function installApp() {
         if(!deferredPrompt) return;
-        // Munculkan prompt native Android
         deferredPrompt.prompt();
-        // Tunggu user milih apa
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('User accepted install');
                 document.getElementById('installBtn').style.display = 'none';
-            } else {
-                console.log('User dismissed install');
             }
             deferredPrompt = null;
         });
