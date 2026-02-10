@@ -31,9 +31,9 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: var(--text); overflow: hidden; /* Lock scroll during splash */ }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: var(--text); overflow: hidden; }
         
-        /* --- SPLASH SCREEN STYLES (UPDATED) --- */
+        /* SPLASH SCREEN STYLES */
         #splash-bg {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -53,19 +53,16 @@
         }
 
         #splash-logo {
-            width: 120px; /* Ukuran awal di tengah */
+            width: 120px;
             height: auto;
-            /* Transisi untuk posisi dan ukuran */
             transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); 
             transform-origin: center center;
         }
-        /* -------------------------------------- */
 
         .container { max-width: 480px; margin: 0 auto; background: var(--card-bg); padding: 25px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); position: relative; }
         
         /* HEADER */
         .logo-container { text-align: center; margin-bottom: 20px; position: relative; }
-        /* Opacity 0 di awal, nanti muncul setelah animasi splash selesai */
         .logo-container img { width: 100%; display: block; max-height: 120px; object-fit: contain; margin: 0 auto; opacity: 0; transition: opacity 0.3s; }
         
         #draftNotice { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -150,7 +147,6 @@
 </head>
 <body onclick="handleClickOutside(event)">
 
-<!-- SPLASH SCREEN ELEMENTS -->
 <div id="splash-bg"></div>
 <div id="splash-logo-container">
     <img id="splash-logo" src="https://i.ibb.co.com/tPmKFXzQ/warna-putih.png" alt="Splash Logo">
@@ -169,7 +165,6 @@
 
 <div class="container">
     <div class="logo-container">
-        <!-- Beri ID pada logo tujuan agar bisa dideteksi posisinya -->
         <a href="https://ibb.co.com/HpF43dCB">
             <img id="header-logo" src="https://i.ibb.co.com/tPmKFXzQ/warna-putih.png" alt="warna-putih">
         </a>
@@ -286,51 +281,34 @@
     const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
     window.onload = () => {
-        // --- LOGIC ANIMASI SPLASH (MENEMPEL KE HEADER) ---
+        // --- SPLASH ANIMATION ---
         setTimeout(() => {
             const splashLogo = document.getElementById('splash-logo');
             const splashContainer = document.getElementById('splash-logo-container');
             const splashBg = document.getElementById('splash-bg');
             const targetLogo = document.getElementById('header-logo');
 
-            // 1. Dapatkan posisi koordinat
             const startRect = splashLogo.getBoundingClientRect();
             const endRect = targetLogo.getBoundingClientRect();
-
-            // 2. Hitung jarak perpindahan (Translate)
             const deltaX = endRect.left + (endRect.width / 2) - (startRect.left + (startRect.width / 2));
             const deltaY = endRect.top + (endRect.height / 2) - (startRect.top + (startRect.height / 2));
-
-            // 3. Hitung perubahan ukuran (Scale)
-            // Menggunakan width karena aspect ratio sama
             const scale = endRect.width / startRect.width; 
 
-            // 4. Terapkan animasi Transform ke Logo Splash
             splashLogo.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scale})`;
-            
-            // 5. Fade Out Background putihnya saja (logo tetap terlihat bergerak)
             splashBg.style.opacity = '0';
 
-            // 6. Bersihkan elemen setelah animasi selesai (700ms sesuai CSS)
             setTimeout(() => {
-                // Tampilkan logo asli di header
                 targetLogo.style.opacity = '1'; 
-                
-                // Hapus splash screen
                 splashContainer.style.display = 'none';
                 splashBg.style.display = 'none';
-                
-                // Buka kunci scroll
                 document.body.style.overflow = 'auto';
             }, 700);
+        }, 1200);
 
-        }, 1200); // Tunggu sebentar sebelum mulai animasi
-        // ------------------------------------------------
-
+        // --- LOAD DATA ---
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('tanggal').setAttribute('max', today);
         const savedData = localStorage.getItem('ghozang_data');
-        
         let jenisAwal = 'pengeluaran';
         
         if (savedData) {
@@ -351,6 +329,21 @@
         pilihJenis(jenisAwal, false);
         updateDateDisplay();
         updateDateButtons();
+        
+        // --- REGISTER SERVICE WORKER FOR PWA ---
+        // Android requires a Service Worker for the "Add to Home Screen" to work
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', (e) => e.waitUntil(self.skipWaiting()));
+                self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', (e) => {}); 
+            `;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl)
+                .then(() => console.log('SW Registered'))
+                .catch(err => console.error('SW Failed:', err));
+        }
     };
 
     function checkNext(e) {
