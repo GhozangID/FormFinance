@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Form Finance</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="https://i.ibb.co.com/tPmKFXzQ/warna-putih.png">
+    
+    <!-- Manifest PWA -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Form Finance","short_name":"Finance","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","icons":[{"src":"https://i.ibb.co.com/tPmKFXzQ/warna-putih.png","sizes":"512x512","type":"image/png"}]}'>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #33d115; 
+            --bg: #f8f9fa; 
+            --text: #333; 
+            --card-bg: #ffffff;
+            --border: #e9ecef;
+            
+            /* Theme Colors */
+            --pengeluaran-color: #e74c3c;
+            --pemasukan-color: #27ae60;
+            
+            /* Dynamic Accent - controlled by JS */
+            --accent-color: var(--pengeluaran-color); 
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: var(--text); }
+        
+        .container { max-width: 480px; margin: 0 auto; background: var(--card-bg); padding: 25px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); position: relative; }
+        
+        /* HEADER SEAMLESS */
+        .logo-container { text-align: center; margin-bottom: 20px; position: relative; }
+        .logo-container img { width: 100%; display: block; max-height: 120px; object-fit: contain; margin: 0 auto; }
+        
+        #draftNotice { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #draftNotice.show { opacity: 1; bottom: 0; }
+
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #555; }
+        .required { color: var(--pengeluaran-color); } 
+        .form-group { margin-bottom: 24px; position: relative; }
+
+        /* TYPE SELECTOR (TABS) */
+        .type-selector { display: flex; gap: 10px; margin-bottom: 25px; background: #f1f3f5; padding: 5px; border-radius: 12px; }
+        .type-btn { flex: 1; border: none; padding: 12px; border-radius: 8px; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.3s ease; background: transparent; color: #888; }
+        .type-btn.active { color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transform: scale(1.02); }
+        .type-btn#btn-pengeluaran.active { background-color: var(--pengeluaran-color); }
+        .type-btn#btn-pemasukan.active { background-color: var(--pemasukan-color); }
+
+        /* INPUT STYLES */
+        input, .custom-select-trigger, .date-display { 
+            width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 12px; 
+            font-family: 'Poppins', sans-serif; font-size: 14px; background-color: #fff; transition: all 0.2s ease; 
+            color: #333;
+        }
+        input:focus { border-color: var(--accent-color); outline: none; box-shadow: 0 0 0 4px rgba(0,0,0,0.03); }
+        
+        /* DATE DISPLAY */
+        .date-container { position: relative; }
+        #tanggal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
+        .date-display { display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: #fff; }
+        .date-display i { color: var(--accent-color); transition: color 0.3s; }
+
+        /* DROPDOWN & SEARCH */
+        .custom-select-content { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); z-index: 100; margin-top: 8px; display: none; overflow: hidden; border: 1px solid var(--border); }
+        .custom-select-content.show { display: block; animation: slideDown 0.2s ease-out; }
+
+        /* PERBAIKAN SCROLL ADA DI SINI */
+        .options-list {
+            max-height: 250px; /* Membatasi tinggi daftar agar tidak kepanjangan */
+            overflow-y: auto; /* Mengaktifkan scroll vertikal */
+            -webkit-overflow-scrolling: touch; /* Smooth scroll untuk iOS/Android */
+            overscroll-behavior: contain; /* Mencegah scroll body ikut bergerak */
+        }
+
+        .search-box { padding: 12px; background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; display: flex; align-items: center; z-index: 10; }
+        .search-box input { padding: 10px 35px 10px 12px; font-size: 13px; border: 1px solid var(--border); background: #f8f9fa; }
+        .search-box input:focus { border-color: var(--accent-color); background: #fff; }
+        .btn-clear-search { position: absolute; right: 25px; color: #999; cursor: pointer; display: none; }
+
+        .opt-group { background: #f8f9fa; padding: 10px 15px; font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .option-item { padding: 14px 15px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #f8f9fa; transition: 0.1s; }
+        .option-item:hover { background: #f0fdf4; padding-left: 20px; color: var(--accent-color); }
+        
+        /* HELPER TEXT (TERBILANG) */
+        .nominal-helper { font-size: 12px; color: #777; margin-top: 8px; font-weight: 500; font-style: italic; display: block; min-height: 18px; line-height: 1.4; padding-left: 4px; border-left: 3px solid transparent; transition: border-color 0.3s; }
+        .nominal-helper.has-value { border-left-color: var(--accent-color); padding-left: 8px; color: #555; }
+
+        /* QUICK ACTIONS GRID */
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+        .q-btn { 
+            padding: 10px 5px; background: #fff; border-radius: 10px; font-size: 12px; 
+            cursor: pointer; font-weight: 600; border: 1px solid var(--border); color: #666; 
+            transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .q-btn:active { transform: scale(0.96); }
+        .q-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        
+        /* DATE BUTTONS (2 Columns) */
+        .date-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .date-btn { padding: 10px; background: #f1f3f5; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; transition: 0.2s; }
+        .date-btn.active { background: var(--accent-color); color: white; }
+
+        /* MAIN BUTTONS */
+        .btn-wa { 
+            background-color: var(--accent-color); color: white; border: none; width: 100%; padding: 18px; 
+            font-size: 16px; font-weight: 600; border-radius: 14px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 30px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: all 0.3s;
+        }
+        .btn-wa:active { transform: scale(0.98); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        .btn-reset { background: none; border: none; color: #999; width: 100%; margin-top: 20px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+        .btn-reset:hover { color: var(--pengeluaran-color); }
+        .input-error { border-color: var(--pengeluaran-color) !important; animation: shake 0.3s; }
+        
+        /* MODAL */
+        #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-card { background: #fff; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; animation: slideUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-content { font-size: 14px; white-space: pre-wrap; background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid var(--border); line-height: 1.6; color: #333; margin-top: 15px; }
+        .modal-btns { display: flex; gap: 12px; margin-top: 25px; }
+        .m-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 13px; }
+        .m-confirm { background: var(--accent-color); color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .m-cancel { background: #f1f3f5; color: #666; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body onclick="handleClickOutside(event)">
+
+<div id="modalOverlay">
+    <div class="modal-card">
+        <label style="font-size: 16px; margin-bottom: 0;">Konfirmasi Laporan</label>
+        <div class="modal-content" id="modalText"></div>
+        <div class="modal-btns">
+            <button class="m-btn m-cancel" onclick="closeModal()">BATAL</button>
+            <button class="m-btn m-confirm" onclick="confirmSend()">KIRIM KE WA</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="logo-container">
+        <!-- Logo Seamless -->
+        <a href="https://ibb.co.com/HpF43dCB">
+            <img src="https://i.ibb.co.com/tPmKFXzQ/warna-putih.png" alt="warna-putih">
+        </a>
+        <div id="draftNotice">Melanjutkan draf...</div>
+    </div>
+
+    <form id="financeForm" onsubmit="return false;">
+        
+        <!-- Segmented Switch (Tabs) -->
+        <div class="type-selector">
+            <button type="button" class="type-btn" id="btn-pengeluaran" onclick="pilihJenis('pengeluaran')">
+                <i class="fas fa-arrow-down" style="margin-right:5px; font-size:10px;"></i> PENGELUARAN
+            </button>
+            <button type="button" class="type-btn" id="btn-pemasukan" onclick="pilihJenis('pemasukan')">
+                <i class="fas fa-arrow-up" style="margin-right:5px; font-size:10px;"></i> PEMASUKAN
+            </button>
+        </div>
+        <input type="hidden" id="jenis_value">
+
+        <div class="form-group" id="group_deskripsi">
+            <label>Deskripsi Transaksi <span class="required">*</span></label>
+            <input type="text" id="deskripsi" placeholder="Misal: beli kopi sore" autocomplete="off" oninput="saveAsLowercase(this)" onkeydown="checkNext(event)" enterkeyhint="next">
+        </div>
+
+        <div class="form-group" id="group_sub">
+            <label>Sub Kategori <span class="required">*</span></label>
+            <div class="custom-select-container">
+                <div class="custom-select-trigger" onclick="handleSubClick()" id="sub_trigger">
+                    <span>-- Pilih Kategori --</span>
+                    <i class="fas fa-chevron-down" style="font-size: 12px; color: #aaa;"></i>
+                </div>
+                <div class="custom-select-content" id="sub_content">
+                    <div class="search-box">
+                        <i class="fas fa-search" style="color:#aaa; margin-right: 8px;"></i>
+                        <input type="text" id="sub_search" placeholder="Cari kategori..." onkeyup="filterOptions()" enterkeyhint="search">
+                        <i class="fas fa-times-circle btn-clear-search" id="clearSearchIcon" onclick="clearSearch()"></i>
+                    </div>
+                    <!-- Ini yang sudah diperbaiki scrollnya -->
+                    <div class="options-list" id="sub_options"></div>
+                    <div id="sub_no_results" style="padding: 15px; text-align: center; color: #999; font-size: 13px; display: none;">Kategori tidak ditemukan...</div>
+                </div>
+            </div>
+            <input type="hidden" id="sub_value">
+        </div>
+
+        <div class="form-group" id="group_tanggal">
+            <label>Tanggal Transaksi <span class="required">*</span></label>
+            <div class="date-container">
+                <div class="date-display" id="date_display_text">
+                    <span>Pilih Tanggal</span>
+                    <i class="far fa-calendar-alt"></i>
+                </div>
+                <!-- Auto focus ke nominal setelah pilih tanggal -->
+                <input type="date" id="tanggal" onchange="jumpToNominal()">
+            </div>
+            <div class="date-actions">
+                <button type="button" class="date-btn" id="btn_tgl_0" onclick="setTgl(0)">Hari Ini</button>
+                <button type="button" class="date-btn" id="btn_tgl_1" onclick="setTgl(-1)">Kemarin</button>
+            </div>
+        </div>
+
+        <div class="form-group" id="group_nominal">
+            <label>Nominal (Rp) <span class="required">*</span></label>
+            <input type="text" id="nominal" placeholder="0" onkeyup="handleNominalInput(this)" inputmode="numeric" style="font-size: 16px; font-weight: 600;">
+            <span class="nominal-helper" id="nominal_terbaca"></span>
+            
+            <!-- Grid 3x2 Quick Actions -->
+            <div class="quick-actions">
+                <button type="button" class="q-btn" onclick="addMoney(50000)">+50rb</button>
+                <button type="button" class="q-btn" onclick="addMoney(100000)">+100rb</button>
+                <button type="button" class="q-btn" onclick="addMoney(200000)">+200rb</button>
+                <button type="button" class="q-btn" onclick="addMoney(300000)">+300rb</button>
+                <button type="button" class="q-btn" onclick="addMoney(500000)">+500rb</button>
+                <button type="button" class="q-btn" onclick="addMoney(1000000)">+1jt</button>
+            </div>
+        </div>
+
+        <button type="button" class="btn-wa" id="btnKirim" onclick="prepareMessage()">
+            <i class="fab fa-whatsapp"></i> KIRIM LAPORAN
+        </button>
+
+        <button type="button" class="btn-reset" onclick="resetForm()">Reset Form</button>
+    </form>
+</div>
+
+<script>
+    // Data Kategori
+    const dataKategori = {
+        "pengeluaran": [
+            {group: "Kewajiban Suami", items: ["Nafkah Pribadi Ke Istri", "Zakat Profesi (2,5%)", "Uang Belanja Dapur Ke Istri (Lauk, Sayur, Beras, Bumbu)"]},
+            {group: "Operasional Cash", items: ["Dana Taktis / Pegangan Cash"]},
+            {group: "Rumah Tangga", items: ["Cicilan KPR / Sewa Rumah", "Token Listrik / Tagihan PLN", "Air (PDAM/Tanah) & Gas Alam", "Internet WiFi Rumah", "Iuran Lingkungan (Sampah & Keamanan)", "Gaji ART / Pengasuh", "Belanja Kebersihan (Sabun Pel, Deterjen, Tisu)", "Air Minum (Galon)"]},
+            {group: " ", items: ["SPP Sekolah / Uang Kegiatan", "Uang Saku / Bekal Sekolah", "Transportasi Antar-Jemput Sekolah"]},
+            {group: "Anak 1 (Kakak)", items: ["SPP (Playgroup/TK) atau Dana Pendidikan Awal", "Popok & Susu"]},
+            {group: "Kucing (Anabul)", items: ["Makanan Kucing (Dry Food & Wet Food)", "Pasir Kucing (Litter Sand)", "Grooming / Vitamin Rutin"]},
+            {group: "Transportasi", items: ["BBM (Bensin Mobil/Motor)", "Parkir & Tol (E-Toll)", "Transport Umum (Ojol/KRL/Busway)", "Service Rutin (Ganti Oli/Tune-up/Cuci)"]},
+            {group: "Kesehatan", items: ["BPJS Kesehatan (Sekeluarga)", "Obat-obatan Rutin / P3K / Vitamin Anak", "Check-up Rutin (Gigi / Mata)"]},
+            {group: "Personal", items: ["Skincare Basic Suami (Sabun/Shampoo/Deo)", "Potong Rambut Suami & Anak Laki-laki"]},
+            {group: "Adm & IT", items: ["Pulsa & Paket Data (Suami)", "Pulsa & Paket Data (Istri & Anak)", "Biaya Admin Bank & Top-up E-Wallet", "Cloud Storage (Google One/iCloud)"]},
+            {group: "Sinking Fund (Tahunan)", items: ["Pajak Kendaraan (STNK) & Pajak Rumah (PBB)", "Perpanjangan SIM / Paspor / Dokumen", "THR ART (Wajib)", "Zakat Fitrah (4 Orang + ART)", "Perlengkapan Sekolah (Buku/Seragam Baru)"]},
+            {group: "Hiburan Keluarga", items: ["Makan di Luar Sekeluarga (Weekend)", "Langganan Streaming (Netflix/Disney+/Spotify)", "Rekreasi Anak (Playground/Mall/Renang)", "Liburan / Staycation Keluarga"]},
+            {group: "Gaya Hidup Suami", items: ["Rokok / Vape", "Gym Membership / Member Olahraga", "Hobi Suami Lainnya", "Jajan Kopi / Makan Siang Pribadi"]},
+            {group: "Kebutuhan Istri", items: ["Skincare/Baju/Tas Istri (Via Nafkah Pribadi)"]},
+            {group: "Kucing (Extra)", items: ["Mainan Kucing / Kasur / Baju Kucing", "Steril Kucing (Jika belum)"]},
+            {group: "Sosial", items: ["Dana Kondangan / Kado Teman", "Traktir Teman / Nongkrong", "Sedekah, Infaq, Wakaf (Di luar Zakat)", "Pinjaman ke Teman/Saudara", "THR Saudara / Angpao Lebaran / Hampers"]},
+            {group: "Fashion", items: ["Baju Baru / Sepatu (Suami & Anak)"]},
+            {group: "Masa Depan", items: ["Tabungan Uang Pangkal Sekolah (Uang Masuk)", "Dana Darurat Keluarga (Cash Keras)", "Investasi Pensiun (Saham/Reksadana/Emas)"]},
+            {group: "Cadangan Aset", items: ["Tabungan Service Besar / Turun Mesin", "Tabungan Ganti Ban Dan Aki (Motor/Mobil)", "Dana Kesehatan Kucing (Sakit/Opname)", "Dana Tak Terduga Keluarga (Lain-lain)", "Perbaikan Rumah / AC / Pompa / Furnitur", "Dana Gadget (HP/Laptop Rusak)", "Kursus Tambahan / Upgrade Skill Suami"]},
+            {group: "Ibadah", items: ["Tabungan Kurban (Sapi/Kambing)"]}
+        ],
+        "pemasukan": [
+            {group: "Gaji & Pendapatan Tetap", items: ["Gaji pokok", "Tunjangan", "Bonus", "Gaji bulanan dari pekerjaan tetap", "Tunjangan (makan, transportasi, jabatan)", "Bonus tahunan atau THR", "Komisi penjualan"]},
+            {group: "Usaha & Freelance", items: ["Pendapatan dari usaha toko / online shop", "Fee proyek freelance"]},
+            {group: "Investasi", items: ["Dividen saham", "Hasil jual beli saham / reksa dana / obligasi", "Keuntungan jual emas atau logam mulia"]},
+            {group: "Sewa & Properti", items: ["Kontrakan"]}
+        ]
+    };
+
+    const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+    window.onload = () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('tanggal').setAttribute('max', today);
+        const savedData = localStorage.getItem('ghozang_data');
+        
+        // Default ke Pengeluaran jika tidak ada data save
+        let jenisAwal = 'pengeluaran';
+        
+        if (savedData) {
+            const d = JSON.parse(savedData);
+            if(d.jenis) jenisAwal = d.jenis;
+            document.getElementById('deskripsi').value = d.deskripsi || '';
+            document.getElementById('sub_value').value = d.sub || '';
+            if(d.sub) document.getElementById('sub_trigger').querySelector('span').innerText = d.sub;
+            document.getElementById('nominal').value = d.nominal || '';
+            document.getElementById('tanggal').value = d.tanggal || today;
+            updateNominalHelper(d.nominal);
+            document.getElementById('draftNotice').classList.add('show');
+            setTimeout(() => document.getElementById('draftNotice').classList.remove('show'), 3000);
+        } else {
+            document.getElementById('tanggal').value = today;
+        }
+        
+        pilihJenis(jenisAwal, false); // Initialize tab state
+        updateDateDisplay();
+        updateDateButtons();
+    };
+
+    function checkNext(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const v = document.getElementById('jenis_value').value;
+            if(!v) { alert("Pilih jenis transaksi dulu"); return; }
+            handleSubClick();
+        }
+    }
+
+    function updateDateDisplay() {
+        const dateVal = document.getElementById('tanggal').value;
+        if(dateVal) {
+            document.getElementById('date_display_text').querySelector('span').innerText = formatTglIndo(dateVal);
+        }
+        saveData();
+        updateDateButtons();
+    }
+
+    function jumpToNominal() {
+        // 1. Update tampilan tanggal
+        updateDateDisplay();
+        
+        // 2. Beri jeda sedikit agar transisi date picker selesai, lalu pindah fokus
+        setTimeout(() => {
+            const nominalInput = document.getElementById('nominal');
+            nominalInput.focus();
+            // Opsional: select all text saat fokus agar mudah diganti
+            // nominalInput.select(); 
+        }, 300);
+    }
+
+    function saveData() {
+        const data = {
+            jenis: document.getElementById('jenis_value').value,
+            deskripsi: document.getElementById('deskripsi').value,
+            sub: document.getElementById('sub_value').value,
+            nominal: document.getElementById('nominal').value,
+            tanggal: document.getElementById('tanggal').value
+        };
+        localStorage.setItem('ghozang_data', JSON.stringify(data));
+    }
+
+    function saveAsLowercase(el) {
+        el.value = el.value.toLowerCase().replace(/\s\s+/g, ' ');
+        saveData();
+    }
+
+    function toggleDropdown(id) {
+        const target = document.getElementById(id);
+        const isOpen = target.classList.contains('show');
+        closeAllDropdowns();
+        if(!isOpen) {
+            target.classList.add('show');
+            // Auto Focus Logic
+            if(id === 'sub_content') {
+                setTimeout(() => {
+                    document.getElementById('sub_search').focus();
+                }, 300); // 300ms delay untuk animasi
+            }
+        }
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll('.custom-select-content').forEach(el => el.classList.remove('show'));
+    }
+
+    function handleSubClick() {
+        const jenis = document.getElementById('jenis_value').value;
+        if(!jenis) { 
+            // Shake effect pada tombol jenis
+            document.querySelector('.type-selector').classList.add('input-error');
+            setTimeout(()=> document.querySelector('.type-selector').classList.remove('input-error'), 500);
+            return; 
+        }
+        toggleDropdown('sub_content');
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('sub_search');
+        input.value = ""; filterOptions(); input.focus();
+    }
+
+    function pilihJenis(val, isNewSelection = true) {
+        const btnPengeluaran = document.getElementById('btn-pengeluaran');
+        const btnPemasukan = document.getElementById('btn-pemasukan');
+        
+        document.getElementById('jenis_value').value = val;
+
+        // Reset classes
+        btnPengeluaran.classList.remove('active');
+        btnPemasukan.classList.remove('active');
+
+        // Set Active State & Theme Color
+        if(val === 'pengeluaran') {
+            btnPengeluaran.classList.add('active');
+            document.documentElement.style.setProperty('--accent-color', 'var(--pengeluaran-color)');
+        } else {
+            btnPemasukan.classList.add('active');
+            document.documentElement.style.setProperty('--accent-color', 'var(--pemasukan-color)');
+        }
+
+        renderSubOptions(val);
+        
+        if(isNewSelection) {
+            document.getElementById('sub_value').value = "";
+            document.getElementById('sub_trigger').querySelector('span').innerText = "-- Pilih Kategori --";
+            closeAllDropdowns();
+            saveData();
+        }
+    }
+
+    function renderSubOptions(jenis) {
+        const list = document.getElementById('sub_options');
+        list.innerHTML = "";
+        dataKategori[jenis].forEach(group => {
+            const gDiv = document.createElement('div');
+            gDiv.className = "opt-group";
+            gDiv.innerHTML = group.group.trim() === "" ? "&nbsp;" : group.group;
+            list.appendChild(gDiv);
+            group.items.forEach(item => {
+                const iDiv = document.createElement('div');
+                iDiv.className = "option-item";
+                iDiv.innerText = item;
+                iDiv.onclick = () => {
+                    document.getElementById('sub_trigger').querySelector('span').innerText = item;
+                    document.getElementById('sub_value').value = item;
+                    closeAllDropdowns(); saveData();
+                    document.getElementById('tanggal').focus();
+                };
+                list.appendChild(iDiv);
+            });
+        });
+    }
+
+    function filterOptions() {
+        const query = document.getElementById('sub_search').value.toLowerCase();
+        const items = document.querySelectorAll('#sub_options .option-item');
+        const groups = document.querySelectorAll('#sub_options .opt-group');
+        let any = false;
+        document.getElementById('clearSearchIcon').style.display = query.length > 0 ? "block" : "none";
+        items.forEach(el => {
+            const match = el.innerText.toLowerCase().includes(query);
+            el.style.display = match ? "block" : "none";
+            if(match) any = true;
+        });
+        groups.forEach(g => {
+            let next = g.nextElementSibling;
+            let ok = false;
+            while(next && next.classList.contains('option-item')) {
+                if(next.style.display !== "none") ok = true;
+                next = next.nextElementSibling;
+            }
+            g.style.display = ok ? "block" : "none";
+        });
+        document.getElementById('sub_no_results').style.display = any ? "none" : "block";
+    }
+
+    // Logic Terbilang
+    function angkaKeTerbilang(n) {
+        const bilangan = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+        let temp = "";
+        if (n < 12) temp = " " + bilangan[n];
+        else if (n < 20) temp = angkaKeTerbilang(n - 10) + " belas";
+        else if (n < 100) temp = angkaKeTerbilang(Math.floor(n / 10)) + " puluh" + angkaKeTerbilang(n % 10);
+        else if (n < 200) temp = " seratus" + angkaKeTerbilang(n - 100);
+        else if (n < 1000) temp = angkaKeTerbilang(Math.floor(n / 100)) + " ratus" + angkaKeTerbilang(n % 100);
+        else if (n < 2000) temp = " seribu" + angkaKeTerbilang(n - 1000);
+        else if (n < 1000000) temp = angkaKeTerbilang(Math.floor(n / 1000)) + " ribu" + angkaKeTerbilang(n % 1000);
+        else if (n < 1000000000) temp = angkaKeTerbilang(Math.floor(n / 1000000)) + " juta" + angkaKeTerbilang(n % 1000000);
+        return temp;
+    }
+
+    function handleNominalInput(el) {
+        let val = el.value.replace(/[^0-9]/g, "");
+        if(val === "") { el.value = ""; updateNominalHelper(""); return; }
+        el.value = "Rp " + new Intl.NumberFormat("id-ID").format(val);
+        updateNominalHelper(el.value);
+        saveData();
+    }
+
+    function updateNominalHelper(raw) {
+        const num = parseInt(raw.replace(/[^0-9]/g, ""));
+        const helper = document.getElementById('nominal_terbaca');
+        
+        if(!num) { 
+            helper.innerText = ""; 
+            helper.classList.remove('has-value');
+            return; 
+        }
+        
+        let hasilTerbilang = angkaKeTerbilang(num).trim();
+        hasilTerbilang = hasilTerbilang.charAt(0).toUpperCase() + hasilTerbilang.slice(1);
+        
+        helper.innerText = "Terbilang: " + hasilTerbilang + " rupiah";
+        helper.classList.add('has-value');
+    }
+
+    function addMoney(amt) {
+        const el = document.getElementById('nominal');
+        let cur = parseInt(el.value.replace(/[^0-9]/g, "")) || 0;
+        el.value = cur + amt;
+        handleNominalInput(el);
+    }
+
+    function setTgl(off) {
+        const d = new Date(); d.setDate(d.getDate() + off);
+        document.getElementById('tanggal').valueAsDate = d;
+        jumpToNominal();
+    }
+
+    function updateDateButtons() {
+        const val = document.getElementById('tanggal').value;
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 864e5).toISOString().split('T')[0];
+        document.getElementById('btn_tgl_0').classList.toggle('active', val === today);
+        document.getElementById('btn_tgl_1').classList.toggle('active', val === yesterday);
+    }
+
+    function highlightError(id) {
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+        const el = document.getElementById(id);
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('input-error');
+        setTimeout(() => el.classList.remove('input-error'), 500);
+    }
+
+    function formatTglIndo(s) {
+        const p = s.split("-");
+        return `${parseInt(p[2])} ${namaBulan[parseInt(p[1])-1]} ${p[0]}`;
+    }
+
+    let finalMessage = "";
+
+    function prepareMessage() {
+        const fields = [
+            {id:'jenis_value', t: document.querySelector('.type-selector')}, // Target wrapper selector
+            {id:'deskripsi', t: document.getElementById('deskripsi')},
+            {id:'sub_value', t: document.getElementById('sub_trigger')},
+            {id:'nominal', t: document.getElementById('nominal')},
+            {id:'tanggal', t: document.querySelector('.date-container')}
+        ];
+        
+        let err = false;
+        
+        // Manual validation loop
+        if(!document.getElementById('jenis_value').value) {
+            highlightErrorObj(document.querySelector('.type-selector')); err = true;
+        }
+        if(!document.getElementById('deskripsi').value.trim()) {
+            highlightErrorObj(document.getElementById('deskripsi')); err = true;
+        }
+        if(!document.getElementById('sub_value').value) {
+            highlightErrorObj(document.getElementById('sub_trigger')); err = true;
+        }
+        if(document.getElementById('nominal').value === "Rp 0" || !document.getElementById('nominal').value) {
+            highlightErrorObj(document.getElementById('nominal')); err = true;
+        }
+
+        if(err) return;
+
+        finalMessage = `*Jenis Transaksi :* ${document.getElementById('jenis_value').value}\n` +
+                       `*Deskripsi Transaksi :* ${document.getElementById('deskripsi').value.trim()}\n` +
+                       `*Sub Kategori Transaksi :* ${document.getElementById('sub_value').value}\n` +
+                       `*Tanggal Transaksi :* ${formatTglIndo(document.getElementById('tanggal').value)}\n` +
+                       `*Nominal Transaksi :* ${document.getElementById('nominal').value}`;
+
+        document.getElementById('modalText').innerText = finalMessage;
+        document.getElementById('modalOverlay').style.display = "flex";
+    }
+
+    // Helper untuk highlight error elemen
+    function highlightErrorObj(el) {
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('input-error');
+        setTimeout(() => el.classList.remove('input-error'), 500);
+    }
+
+    function confirmSend() {
+        localStorage.removeItem('ghozang_data');
+        window.open(`https://wa.me/6285714443443?text=${encodeURIComponent(finalMessage)}`, '_blank');
+        location.reload();
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').style.display = "none"; }
+    function resetForm() { if(confirm("Hapus semua draf?")) { localStorage.removeItem('ghozang_data'); location.reload(); } }
+    function handleClickOutside(e) { if(!e.target.closest('.custom-select-container') && !e.target.closest('.date-container')) closeAllDropdowns(); }
+</script>
+
+</body>
+</html>
