@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FormFinance</title>
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA Meta Tags (iOS Support) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" type="image/png" href="https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg">
     
-    <!-- Manifest PWA -->
-    <link rel="manifest" href='data:application/manifest+json,{"name":"FormFinance","short_name":"FormFinance","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","icons":[{"src":"https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg","sizes":"512x512","type":"image/png"}]}'>
+    <!-- 
+      MANIFEST PWA (DIPERBARUI UNTUK ANDROID)
+      - Menambahkan 2 ukuran icon (192 & 512)
+      - Menambahkan type 'maskable'
+      - Start URL diset eksplisit
+    -->
+    <link rel="manifest" id="manifest-placeholder" href='data:application/manifest+json,{"name":"FormFinance","short_name":"FormFinance","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","orientation":"portrait","icons":[{"src":"https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"https://i.ibb.co.com/wNh7mbFp/Generated-Image-February-10-2026-10-35-PM.jpg","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -65,6 +70,24 @@
         .logo-container { text-align: center; margin-bottom: 20px; position: relative; }
         .logo-container img { width: 100%; display: block; max-height: 120px; object-fit: contain; margin: 0 auto; opacity: 0; transition: opacity 0.3s; }
         
+        /* INSTALL BUTTON (NEW) */
+        #installBtn {
+            display: none; /* Hidden by default */
+            margin: 10px auto 5px auto;
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #installBtn i { margin-right: 6px; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         #draftNotice { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         #draftNotice.show { opacity: 1; bottom: 0; }
 
@@ -168,6 +191,8 @@
         <a href="https://ibb.co.com/HpF43dCB">
             <img id="header-logo" src="https://i.ibb.co.com/tPmKFXzQ/warna-putih.png" alt="warna-putih">
         </a>
+        <!-- TOMBOL INSTALL MANUAL -->
+        <button id="installBtn" onclick="installApp()"><i class="fas fa-download"></i> Install Aplikasi</button>
         <div id="draftNotice">Melanjutkan draf...</div>
     </div>
 
@@ -279,6 +304,7 @@
     };
 
     const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    let deferredPrompt; // Untuk menyimpan event install
 
     window.onload = () => {
         // --- SPLASH ANIMATION ---
@@ -288,21 +314,23 @@
             const splashBg = document.getElementById('splash-bg');
             const targetLogo = document.getElementById('header-logo');
 
-            const startRect = splashLogo.getBoundingClientRect();
-            const endRect = targetLogo.getBoundingClientRect();
-            const deltaX = endRect.left + (endRect.width / 2) - (startRect.left + (startRect.width / 2));
-            const deltaY = endRect.top + (endRect.height / 2) - (startRect.top + (startRect.height / 2));
-            const scale = endRect.width / startRect.width; 
+            if(splashLogo && targetLogo) {
+                const startRect = splashLogo.getBoundingClientRect();
+                const endRect = targetLogo.getBoundingClientRect();
+                const deltaX = endRect.left + (endRect.width / 2) - (startRect.left + (startRect.width / 2));
+                const deltaY = endRect.top + (endRect.height / 2) - (startRect.top + (startRect.height / 2));
+                const scale = endRect.width / startRect.width; 
 
-            splashLogo.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scale})`;
-            splashBg.style.opacity = '0';
+                splashLogo.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scale})`;
+                splashBg.style.opacity = '0';
 
-            setTimeout(() => {
-                targetLogo.style.opacity = '1'; 
-                splashContainer.style.display = 'none';
-                splashBg.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }, 700);
+                setTimeout(() => {
+                    targetLogo.style.opacity = '1'; 
+                    splashContainer.style.display = 'none';
+                    splashBg.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }, 700);
+            }
         }, 1200);
 
         // --- LOAD DATA ---
@@ -330,21 +358,55 @@
         updateDateDisplay();
         updateDateButtons();
         
-        // --- REGISTER SERVICE WORKER FOR PWA ---
-        // Android requires a Service Worker for the "Add to Home Screen" to work
+        // --- SERVICE WORKER REGISTRATION (SINGLE FILE HACK) ---
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', (e) => e.waitUntil(self.skipWaiting()));
-                self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', (e) => {}); 
+            // Kita buat SW minimalis agar Android senang
+            const swContent = `
+                self.addEventListener('install', (e) => {
+                    self.skipWaiting();
+                });
+                self.addEventListener('activate', (e) => {
+                    e.waitUntil(self.clients.claim());
+                });
+                self.addEventListener('fetch', (e) => {
+                    // Passthrough, tidak ada cache karena ini single file dinamis
+                });
             `;
-            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const blob = new Blob([swContent], {type: 'text/javascript'});
             const swUrl = URL.createObjectURL(blob);
+            
             navigator.serviceWorker.register(swUrl)
-                .then(() => console.log('SW Registered'))
-                .catch(err => console.error('SW Failed:', err));
+                .then((reg) => console.log('SW Registered via Blob', reg))
+                .catch((err) => console.log('SW Registration Failed', err));
         }
+
+        // --- INSTALL PROMPT LISTENER ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Cegah Chrome 67 ke bawah muncul otomatis (agar kita bisa kontrol)
+            e.preventDefault();
+            // Simpan event supaya bisa dipanggil nanti
+            deferredPrompt = e;
+            // Munculkan tombol install kita
+            document.getElementById('installBtn').style.display = 'block';
+        });
     };
+
+    // Fungsi Install Manual
+    function installApp() {
+        if(!deferredPrompt) return;
+        // Munculkan prompt native Android
+        deferredPrompt.prompt();
+        // Tunggu user milih apa
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted install');
+                document.getElementById('installBtn').style.display = 'none';
+            } else {
+                console.log('User dismissed install');
+            }
+            deferredPrompt = null;
+        });
+    }
 
     function checkNext(e) {
         if (e.key === 'Enter') {
